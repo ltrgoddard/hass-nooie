@@ -1,0 +1,18 @@
+# what home assistant writes for the go2rtc it manages, so the rig meets the
+# same restrictions a real install does. the api listens on tcp rather than a
+# unix socket only because home assistant reaches it by url here.
+api:
+  listen: "127.0.0.1:1984"
+
+# the one binary go2rtc may execute. an `exec:` source that runs anything
+# else is refused, which is why the integration serves HTTP instead.
+exec:
+  allow_paths:
+    - ffmpeg
+
+rtsp:
+  listen: "127.0.0.1:18554"
+
+webrtc:
+  listen: ":18555/tcp"
+  ice_servers: []

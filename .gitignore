@@ -2,7 +2,9 @@
 !.env.example
 /pypi_token
 experiments/
-.claude/
+# the skills belong to the project; the local settings do not.
+.claude/*
+!.claude/skills/
 .venv/
 __pycache__/
 *.pyc

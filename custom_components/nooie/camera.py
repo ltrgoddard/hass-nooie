@@ -34,6 +34,9 @@ class NooieCamera(Camera):
         self._device_id = device_id
         self._attr_unique_id = device_id
         device = account.devices[device_id]
+        # A camera that was off when the account was read is not called, so
+        # it has nothing to show until the entry is reloaded.
+        self._attr_available = bool(device.get("online"))
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, device_id)},
             manufacturer="Nooie",

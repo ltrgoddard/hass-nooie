@@ -51,7 +51,7 @@ MAX_RETRY = 600
 # them, and the proxy needs a newer one than the pin. Giving it an environment
 # of its own settles that at this release and at every later one, and costs
 # far less disk than the container this integration replaced.
-VERSION = "0.1.0"
+VERSION = "0.2.0"
 PACKAGE = f"nooie-proxy=={VERSION}"
 BUILD_TIMEOUT = 900
 # aiortc reads crc32c only for SCTP, which a receive-only call never opens.
@@ -137,11 +137,13 @@ async def _spawn(
         stderr=asyncio.subprocess.PIPE,
         env=os.environ
         | {
-            # The proxy keeps the UUID that names this install here, so a
-            # rebuilt container signs in as the same client as before. Each
-            # camera gets its own, because Nooie's account layer holds one
-            # session for each install: cameras that share one sign each
-            # other out, and then none of them streams. HOME as well as
+            # The proxy keeps the UUID that names this install here, and the
+            # session it signed in with, so a rebuilt container signs in as
+            # the same client as before. Each camera gets a directory of its
+            # own, because Nooie's signalling holds one websocket for each
+            # install: a second connection closes the first, and the call it
+            # was carrying ends. Cameras that shared an install would take
+            # turns streaming for a few seconds each. HOME as well as
             # XDG_CONFIG_HOME, because macOS reads only the first.
             "HOME": home,
             "XDG_CONFIG_HOME": home,
@@ -295,6 +297,10 @@ class Feed:
             # Without this the camera is simply never there, and the reason
             # sits in a debug log nobody has turned on.
             _LOGGER.warning("%s did not stream: %s", self._name, said)
+        else:
+            # The engine's last word says how long the call held and what
+            # ended it, which is the whole of what a dropped call leaves.
+            _LOGGER.info("%s: %s", self._name, said)
         return carried
 
     def _publish(self, chunk: bytes) -> None:
@@ -326,12 +332,27 @@ async def async_serve(
     # Nothing calls a camera until the server that carries it is up, so a
     # server that fails to start leaves no call behind.
     entry.async_on_unload(async_stop)
+    # A camera that was off when the account was read cannot answer, and
+    # every attempt on it is another sign-in for nothing. Reload the entry to
+    # pick one up once it is back.
+    asleep = [
+        device.get("name", device_id)
+        for device_id, device in devices.items()
+        if not device.get("online")
+    ]
+    if asleep:
+        _LOGGER.warning(
+            "Not calling %s: offline when the account was read. Reload the "
+            "integration once the camera is back",
+            ", ".join(str(name) for name in asleep),
+        )
     feeds.update(
         {
             device_id: Feed(
                 hass, python, entry.data, device_id, device.get("name", "")
             )
             for device_id, device in devices.items()
+            if device.get("online")
         }
     )
     return int(runner.addresses[0][1])

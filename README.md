@@ -46,9 +46,10 @@ Four things fix that shape:
 - One camera, one call: the proxy registers one NAT mapping and places one
   call for each process. The integration hands the result to as many readers
   as ask for it.
-- Nooie's account layer holds one session for each install, so each camera
-  signs in as an install of its own. Cameras that share one sign each other
-  out, and then none of them streams.
+- Nooie's signalling holds one websocket for each install, and a second
+  connection closes the first. Each camera therefore signs in as an install
+  of its own, and keeps its session between calls. A camera that was offline
+  when the account was read is not called at all, because it cannot answer.
 
 ## What it writes
 
@@ -57,7 +58,8 @@ Everything lives under `config/nooie/`.
 | path | contents |
 | --- | --- |
 | `venv/` | the engine and its dependencies |
-| `<uuid>/` | one camera's install identity |
+| `account/` | the install that reads the camera list, and its session |
+| `<uuid>/` | one camera's install, and its session |
 
 The engine is not a Home Assistant requirement, because it is a program
 rather than a library. Home Assistant pins the versions that an integration's
@@ -67,7 +69,7 @@ every later one. It costs about half the disk of the container this
 integration replaced. To move to a new engine, change `VERSION` in
 [proxy.py](custom_components/nooie/proxy.py) and reload.
 
-Do not edit or delete the identity files. Your password is held in the config
+Do not edit or delete these directories. Your password is held in the config
 entry and given to each process in its environment. It is not written to disk
 anywhere else.
 
@@ -78,15 +80,16 @@ To use the engine on its own, see
 
 - **No camera appears**: the account must have at least one camera. The
   integration reports what the engine said when a sign-in fails.
-- **A camera shows no picture**: the log names the camera and the reason. An
-  offline camera is the usual one. The call is placed again on a wait that
-  doubles up to ten minutes, because every attempt is a sign-in and Nooie
-  limits the rate of those.
-- **A camera streams for a few seconds and stops, again and again**: a Nooie
-  camera answers one call at a time. Something else is holding it: the Nooie
-  app, or nooie-proxy run by hand. Close that, and the call holds. This is
-  why the integration places one call for each camera and shares it, rather
-  than placing one for each viewer.
+- **A camera shows no picture**: the log names the camera and the reason. A
+  camera that was offline when the account was read is not called at all, and
+  the log says so; reload the integration once it is back. Any other call is
+  placed again on a wait that doubles up to ten minutes, because every
+  attempt is a sign-in and Nooie limits the rate of those.
+- **A camera streams for a few seconds and stops, again and again**: another
+  program is signing in as the same install, which closes this one's
+  signalling websocket and ends its call. nooie-proxy run by hand out of the
+  same directory does it. So does a second copy of this integration on the
+  same `config/nooie/`. Stop that, and the call holds.
 - **The picture breaks up when it starts**: a reader joins between keyframes
   and synchronizes at the next one, which takes about two seconds.
 - **Something else is wrong**: turn on debug logging for
