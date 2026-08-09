@@ -4,7 +4,9 @@ from datetime import timedelta
 
 DOMAIN = "nooie"
 CONF_URL = "url"
-DEFAULT_URL = "http://127.0.0.1:1984"
+# The add-on is reachable by its slug from Home Assistant on OS/Supervised.
+# With the add-on's ports mapped to the host instead, use http://127.0.0.1:1984.
+DEFAULT_URL = "http://nooie:1984"
 
 # Streams published by the add-on's go2rtc carry this prefix; the integration
 # only turns those into camera entities.

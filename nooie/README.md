@@ -7,17 +7,20 @@ WebRTC call alive; go2rtc fans the MPEG-TS out to any number of viewers.
 
 ## Configuration
 
-The add-on needs your Nooie account and one entry per camera:
+The add-on needs your Nooie account:
 
 | option | meaning |
 | --- | --- |
 | `username` | the account email |
 | `password` | the account password |
 | `country_code` | account region, e.g. `44` |
-| `devices` | list of `{ id, name }`, one per camera |
+| `devices` | optional: `{ id, name }` pairs to stream only some cameras, or rename them |
 
-To find device IDs, set the username/password first and start the add-on: it
-logs every camera on the account (`uuid`, name, model, online) at startup.
+With just the credentials set, every camera that is online is discovered and
+streamed automatically, named after its Nooie app name. Leave `devices` empty
+for that; to pick a subset (or name streams yourself), add `{ id, name }`
+entries — the add-on logs every camera on the account (`uuid`, name, model,
+online) at startup, or run `nooie-proxy --list-devices`.
 
 ## Using it
 

@@ -8,8 +8,9 @@ See [README.md](README.md) for configuration and usage.
 
 ## Troubleshooting
 
-- **Camera doesn't appear**: check the add-on log for the device list, then
-  make sure the device ID is correct and the camera shows `online`.
+- **Camera doesn't appear**: check the add-on log for the account's device
+  list and confirm the camera shows `online` — the add-on only streams
+  cameras that are online.
 - **Stream won't start**: the proxy takes 10–20 seconds to place the call.
   The add-on preloads streams at startup, so give it half a minute before
   opening the camera.

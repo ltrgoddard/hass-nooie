@@ -46,8 +46,10 @@ def wrapper(
     return "\n".join(lines) + "\n"
 
 
-def list_devices(username: str, password: str, country: str) -> None:
-    """Log every camera on the account so the user can fill in devices."""
+def fetch_devices(
+    username: str, password: str, country: str
+) -> tuple[list[dict[str, str]], str]:
+    """Every camera on the account, from --list-devices, plus its raw log."""
     import subprocess
 
     env = os.environ.copy()
@@ -64,9 +66,18 @@ def list_devices(username: str, password: str, country: str) -> None:
             timeout=30,
         )
     except Exception as error:
-        print(f"nooie: could not list devices: {error}", file=sys.stderr)
-        return
-    print(result.stdout or result.stderr, file=sys.stderr, end="")
+        return [], f"nooie: could not list devices: {error}\n"
+    output = result.stdout or result.stderr
+    if result.returncode != 0:
+        return [], f"nooie: device list failed:\n{output}"
+    devices = []
+    for line in output.splitlines():
+        fields = line.split("\t")
+        if len(fields) >= 4 and fields[0] != "uuid":
+            devices.append(
+                {"id": fields[0], "name": fields[1], "online": fields[3]}
+            )
+    return devices, output
 
 
 def main() -> None:
@@ -74,7 +85,7 @@ def main() -> None:
     username = str(options.get("username", ""))
     password = str(options.get("password", ""))
     country = str(options.get("country_code", "44"))
-    devices = [
+    manual = [
         device
         for device in (options.get("devices") or [])
         if isinstance(device, dict) and str(device.get("id", "")).strip()
@@ -86,15 +97,20 @@ def main() -> None:
             "set them in the add-on options",
             file=sys.stderr,
         )
+        devices: list[dict[str, str]] = []
     else:
-        list_devices(username, password, country)
-
-    if not devices:
-        print(
-            "nooie: no cameras configured yet; "
-            "pick device IDs from the list above",
-            file=sys.stderr,
-        )
+        discovered, log = fetch_devices(username, password, country)
+        print(log, file=sys.stderr, end="")
+        # An explicit device list wins; otherwise stream every online camera.
+        devices = manual or [
+            device for device in discovered if device["online"] == "yes"
+        ]
+        if not devices:
+            print(
+                "nooie: no cameras configured and none online; "
+                "nothing to stream yet",
+                file=sys.stderr,
+            )
 
     WRAP_DIR.mkdir(parents=True, exist_ok=True)
     streams: list[str] = []
