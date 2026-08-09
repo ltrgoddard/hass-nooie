@@ -6,7 +6,7 @@ ARG BUILD_ARCH=amd64
 # pinned commit that contains proxy/; once the package is published to PyPI,
 # prefer
 #   --build-arg NOOIE_PKG="nooie-proxy==0.1.0"
-ARG NOOIE_PKG="nooie-proxy @ git+https://github.com/ltrgoddard/hass-nooie.git@30bf033#subdirectory=proxy"
+ARG NOOIE_PKG="nooie-proxy @ git+https://github.com/ltrgoddard/hass-nooie.git@1834cbb#subdirectory=proxy"
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates curl git \
