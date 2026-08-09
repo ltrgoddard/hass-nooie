@@ -1,6 +1,6 @@
 # Nooie add-on
 
-Runs [nooie-proxy](../README.md) and [go2rtc](https://github.com/AlexxIT/go2rtc)
+Runs [nooie-proxy](../proxy/README.md) and [go2rtc](https://github.com/AlexxIT/go2rtc)
 so Nooie cameras (WebRTC-only) become RTSP streams Home Assistant and other
 tools can consume. One supervised process per camera keeps the call alive;
 go2rtc fans the stream out to any number of viewers.
