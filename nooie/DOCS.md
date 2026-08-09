@@ -1,18 +1,20 @@
 # Nooie
 
-Stream Nooie cameras (WebRTC-only, no RTSP) into Home Assistant. The add-on
-places and supervises the WebRTC call per camera and exposes the result as
-RTSP via go2rtc.
+Runs nooie-proxy + go2rtc so your Nooie cameras (WebRTC-only) become RTSP
+streams Home Assistant can use.
 
-See [README.md](README.md) for configuration and usage.
+## Configuration
+
+Set the Nooie `username` and `password` (and `country_code` if your region
+isn't `44`). Online cameras are streamed automatically as `nooie/<name>`; the
+optional `devices` list selects a subset or renames them. See
+[README.md](README.md) for the full picture.
 
 ## Troubleshooting
 
-- **Camera doesn't appear**: check the add-on log for the account's device
-  list and confirm the camera shows `online` — the add-on only streams
-  cameras that are online.
-- **Stream won't start**: the proxy takes 10–20 seconds to place the call.
-  The add-on preloads streams at startup, so give it half a minute before
-  opening the camera.
-- **Repeated login failures**: the Nooie API throttles abuse. The wrapper
-  scripts pause ten seconds between attempts.
+- **No camera appears**: it must be online; the add-on log lists the
+  account's cameras at startup.
+- **Slow start**: the call takes 10–20 seconds; streams are preloaded at
+  add-on startup.
+- **Repeated login failures**: the API throttles; the add-on pauses ten
+  seconds between attempts.
