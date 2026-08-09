@@ -49,14 +49,14 @@ to ask go2rtc for a frame, which skips home assistant's stream component:
 
 ```sh
 curl -s -o /tmp/frame.jpg \
-  'http://127.0.0.1:1984/api/frame.jpeg?src=camera.sashcam'
+  'http://127.0.0.1:1984/api/frame.jpeg?src=camera.<name>'
 ```
 
 to ask home assistant for the same thing, which does not:
 
 ```sh
 curl -s -H "Authorization: Bearer $(cat /tmp/ha-nooie/token)" \
-  -o /tmp/frame.jpg http://127.0.0.1:8123/api/camera_proxy/camera.sashcam
+  -o /tmp/frame.jpg http://127.0.0.1:8123/api/camera_proxy/camera.<name>
 ```
 
 ## what the rig cannot settle
