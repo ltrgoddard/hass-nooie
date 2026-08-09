@@ -2,14 +2,12 @@ ARG BUILD_FROM=python:3.12-slim-bookworm
 FROM ${BUILD_FROM}
 
 ARG BUILD_ARCH=amd64
-# How nooie-proxy is installed. The default points at the GitHub repo at a
-# pinned commit that contains proxy/; once the package is published to PyPI,
-# prefer
-#   --build-arg NOOIE_PKG="nooie-proxy==0.1.0"
-ARG NOOIE_PKG="nooie-proxy @ git+https://github.com/ltrgoddard/hass-nooie.git@1834cbb#subdirectory=proxy"
+# How nooie-proxy is installed. It is its own package on PyPI, pinned here so
+# an add-on build is reproducible; point this at a git URL to test a branch.
+ARG NOOIE_PKG="nooie-proxy==0.1.0"
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates curl git \
+    && apt-get install -y --no-install-recommends ca-certificates curl \
     && rm -rf /var/lib/apt/lists/* \
     && pip install --no-cache-dir "${NOOIE_PKG}" \
     && case "${BUILD_ARCH}" in \

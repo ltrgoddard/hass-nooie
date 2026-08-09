@@ -1,0 +1,34 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  proxy:
+    name: proxy lint and tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v9
+      - name: Lint
+        run: uvx ruff check .
+      - name: Tests
+        working-directory: proxy
+        run: uv run python -m unittest discover -s tests -v
+
+  integration:
+    name: home assistant integration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: hassfest
+        uses: home-assistant/actions/hassfest@master
+      - name: HACS
+        uses: hacs/action@main
+        with:
+          category: integration
+          # The domain is not in home-assistant/brands, which a custom
+          # repository does not need.
+          ignore: brands

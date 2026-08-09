@@ -1,0 +1,16 @@
+.env*
+!.env.example
+/pypi_token
+experiments/
+.claude/
+.venv/
+__pycache__/
+*.pyc
+*.swp
+/nooie.mp4
+*.mp4
+*.pcap
+*.pcapng
+dist/
+build/
+*.egg-info/

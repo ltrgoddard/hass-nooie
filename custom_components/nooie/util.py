@@ -11,7 +11,7 @@ def is_nooie_stream(name: str) -> bool:
 
 
 def friendly_name(stream: str) -> str:
-    """Turn 'nooie/living_room' into 'Living room'."""
+    """Turn 'nooie/living_room' into 'Living Room'."""
     slug = stream.removeprefix(STREAM_PREFIX)
     words = slug.replace("-", " ").replace("_", " ").split()
     return " ".join(word.capitalize() for word in words) if words else stream

@@ -23,16 +23,16 @@ def slugify(name: str) -> str:
     return "_".join(words) if words else "camera"
 
 
-def wrapper(
-    device_id: str, username: str, password: str, country: str
-) -> str:
-    """A shell loop: run the proxy, and pick it up when the camera hangs up."""
+def wrapper(device_id: str) -> str:
+    """A shell loop: run the proxy, and pick it up when the camera hangs up.
+
+    The account credentials are deliberately not written here. go2rtc hands
+    its own environment to the processes it starts, so the password can stay
+    in memory instead of sitting in a file that every Home Assistant backup
+    would carry off the machine.
+    """
     lines = [
         "#!/bin/sh",
-        "export XDG_CONFIG_HOME=/data",
-        f"export NOOIE_USERNAME={shlex.quote(username)}",
-        f"export NOOIE_PASSWORD={shlex.quote(password)}",
-        f"export NOOIE_COUNTRY_CODE={shlex.quote(country)}",
         f"export NOOIE_DEVICE_ID={shlex.quote(device_id)}",
         "trap 'trap - TERM; kill -TERM $pid 2>/dev/null; exit 0' TERM INT",
         "while :; do",
@@ -126,8 +126,8 @@ def main() -> None:
             n += 1
         used.add(slug)
         script = WRAP_DIR / f"{slug}.sh"
-        script.write_text(wrapper(device_id, username, password, country))
-        script.chmod(0o755)
+        script.write_text(wrapper(device_id))
+        script.chmod(0o700)
         stream = f"nooie/{slug}"
         streams.append(f"  {stream}:\n    - exec:{script}")
         preload.append(f'  {stream}: ""')
@@ -155,7 +155,19 @@ streams:
 """
         )
 
-    os.execv(GO2RTC, [GO2RTC, "-c", CONFIG])
+    # the credentials reach each camera's proxy through go2rtc's environment,
+    # so they are never written to /data.
+    os.execve(
+        GO2RTC,
+        [GO2RTC, "-c", CONFIG],
+        os.environ
+        | {
+            "XDG_CONFIG_HOME": "/data",
+            "NOOIE_USERNAME": username,
+            "NOOIE_PASSWORD": password,
+            "NOOIE_COUNTRY_CODE": country,
+        },
+    )
 
 
 if __name__ == "__main__":

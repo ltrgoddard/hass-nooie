@@ -31,7 +31,7 @@ class NooieCoordinator(DataUpdateCoordinator[dict[str, dict]]):
     async def _async_update_data(self) -> dict[str, dict]:
         """Fetch the stream list and keep only the add-on's cameras."""
         async with self._session.get(
-            api_url(self.api_url), timeout=10
+            api_url(self.base_url), timeout=10
         ) as response:
             response.raise_for_status()
             data = await response.json(content_type=None)
