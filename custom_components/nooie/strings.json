@@ -1,0 +1,24 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Nooie",
+        "description": "Point at the Nooie add-on's go2rtc server. On Home Assistant OS and Supervised installs this is http://nooie:1984; on HA Container with port mapping it is http://127.0.0.1:1984.",
+        "data": {
+          "url": "go2rtc URL"
+        }
+      },
+      "reconfigure": {
+        "title": "Nooie",
+        "description": "Update the go2rtc URL.",
+        "data": {
+          "url": "go2rtc URL"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not reach the go2rtc server at that URL.",
+      "no_streams": "Reached the server, but found no Nooie streams. Configure the Nooie add-on with your cameras first."
+    }
+  }
+}
