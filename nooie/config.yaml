@@ -1,7 +1,7 @@
 name: "Nooie"
 slug: nooie
 description: "Stream your Nooie cameras into Home Assistant (WebRTC to RTSP via go2rtc)."
-version: "0.2.0"
+version: "0.1.0"
 arch:
   - amd64
   - aarch64
