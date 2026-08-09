@@ -36,12 +36,14 @@ class NooieCamera(Camera):
     _attr_has_entity_name = True
     _attr_supported_features = CameraEntityFeature.STREAM
 
-    def __init__(self, coordinator: NooieCoordinator, stream: str) -> None:
+    def __init__(self, coordinator: NooieCoordinator, stream_name: str) -> None:
         super().__init__()
         self.coordinator = coordinator
-        self.stream = stream
-        self._attr_unique_id = f"{DOMAIN}-{stream}"
-        self._attr_name = friendly_name(stream)
+        # Not "self.stream": Camera uses that for the stream component's
+        # Stream object, and overwriting it breaks streaming.
+        self._stream_name = stream_name
+        self._attr_unique_id = f"{DOMAIN}-{stream_name}"
+        self._attr_name = friendly_name(stream_name)
 
     @property
     def use_stream_for_stills(self) -> bool:
@@ -51,8 +53,8 @@ class NooieCamera(Camera):
     @property
     def available(self) -> bool:
         """Only available while the add-on publishes this stream."""
-        return self.stream in self.coordinator.data
+        return self._stream_name in self.coordinator.data
 
     async def stream_source(self) -> str:
         """The RTSP endpoint on the add-on's go2rtc server."""
-        return rtsp_url(self.coordinator.api_url, self.stream)
+        return rtsp_url(self.coordinator.api_url, self._stream_name)
