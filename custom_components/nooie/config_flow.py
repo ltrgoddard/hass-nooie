@@ -61,7 +61,10 @@ class NooieConfigFlow(ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
         if user_input is not None:
             try:
-                devices = await proxy.async_devices(self.hass, user_input)
+                python = await proxy.async_prepare(self.hass)
+                devices = await proxy.async_devices(
+                    self.hass, python, user_input
+                )
             except proxy.ProxyError as error:
                 _LOGGER.debug("Nooie sign-in failed: %s", error)
                 rejected = "login failed" in str(error)

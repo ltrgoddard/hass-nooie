@@ -17,6 +17,7 @@ import logging
 import os
 import sys
 from functools import partial
+from pathlib import Path
 from typing import Any
 
 from aiohttp import web
@@ -24,7 +25,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 
-from .const import CONF_COUNTRY_CODE
+from .const import CONF_COUNTRY_CODE, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -45,6 +46,14 @@ CLOSE_TIMEOUT = 5
 RETRY = 30
 STEADY = 60
 MAX_RETRY = 600
+# The proxy's own environment. It is a program, not a library: Home Assistant
+# pins the versions an integration's requirements resolve against, PyAV among
+# them, and the proxy needs a newer one than the pin. Giving it an environment
+# of its own settles that at this release and at every later one, and costs
+# far less disk than the container this integration replaced.
+VERSION = "0.1.0"
+PACKAGE = f"nooie-proxy=={VERSION}"
+BUILD_TIMEOUT = 900
 # aiortc reads crc32c only for SCTP, which a receive-only call never opens.
 # The pure-python fallback therefore costs nothing here, but it warns once
 # per process. Keep that one warning out of the log; the rest still show.
@@ -55,19 +64,72 @@ class ProxyError(Exception):
     """nooie-proxy did not run, or the account did not answer."""
 
 
+async def _output(*args: str, timeout: int) -> tuple[int, str]:
+    """Run a command to the end and return its code and what it said."""
+    try:
+        process = await asyncio.create_subprocess_exec(
+            *args,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT,
+        )
+    except OSError as error:
+        # The environment is not built yet, or no longer runs.
+        return 1, str(error)
+    try:
+        async with asyncio.timeout(timeout):
+            stdout, _ = await process.communicate()
+    except TimeoutError:
+        process.kill()
+        return 1, "timed out"
+    return process.returncode or 0, stdout.decode(errors="replace").strip()
+
+
+async def _installed(python: str) -> str:
+    """The proxy version in that environment, or nothing at all."""
+    code, said = await _output(
+        python,
+        "-c",
+        "from importlib.metadata import version; print(version('nooie-proxy'))",
+        timeout=60,
+    )
+    return said if code == 0 else ""
+
+
+async def async_prepare(hass: HomeAssistant) -> str:
+    """The interpreter that runs the proxy, built the first time it is asked."""
+    root = Path(hass.config.path(DOMAIN, "venv"))
+    python = str(root / "bin" / "python")
+    if await _installed(python) == VERSION:
+        return python
+    _LOGGER.info("Building the nooie-proxy environment in %s", root)
+    for command in (
+        (sys.executable, "-m", "venv", "--clear", str(root)),
+        (python, "-m", "pip", "install", "--no-input", "--quiet", PACKAGE),
+    ):
+        code, said = await _output(*command, timeout=BUILD_TIMEOUT)
+        if code != 0:
+            raise ProxyError(f"could not install {PACKAGE}: {said[-400:]}")
+    if await _installed(python) != VERSION:
+        raise ProxyError(f"{PACKAGE} did not install")
+    _LOGGER.info("Installed %s", PACKAGE)
+    return python
+
+
 async def _spawn(
     hass: HomeAssistant,
+    python: str,
     data: dict[str, Any],
     *args: str,
     device_id: str = "",
 ) -> asyncio.subprocess.Process:
-    """Run nooie-proxy in Home Assistant's own interpreter.
+    """Run nooie-proxy in its own environment.
 
     The credentials reach the process through its environment, so they are
     never written to a file that a backup would carry off the machine.
     """
+    home = hass.config.path(DOMAIN, device_id or "account")
     return await asyncio.create_subprocess_exec(
-        sys.executable,
+        python,
         "-m",
         "nooie_proxy",
         *args,
@@ -76,8 +138,13 @@ async def _spawn(
         env=os.environ
         | {
             # The proxy keeps the UUID that names this install here, so a
-            # rebuilt container signs in as the same client as before.
-            "XDG_CONFIG_HOME": hass.config.config_dir,
+            # rebuilt container signs in as the same client as before. Each
+            # camera gets its own, because Nooie's account layer holds one
+            # session for each install: cameras that share one sign each
+            # other out, and then none of them streams. HOME as well as
+            # XDG_CONFIG_HOME, because macOS reads only the first.
+            "HOME": home,
+            "XDG_CONFIG_HOME": home,
             "PYTHONWARNINGS": QUIET,
             "NOOIE_USERNAME": str(data[CONF_USERNAME]),
             "NOOIE_PASSWORD": str(data[CONF_PASSWORD]),
@@ -87,11 +154,16 @@ async def _spawn(
     )
 
 
-async def _log(stderr: asyncio.StreamReader) -> None:
-    """Drain the proxy's progress; a full stderr pipe would stall it."""
+async def _log(stderr: asyncio.StreamReader) -> str:
+    """Drain the proxy's progress, and keep its last word.
+
+    Draining is not optional: a full stderr pipe would stall the proxy.
+    """
+    said = ""
     async for line in stderr:
         said = line.decode(errors="replace").rstrip()
         _LOGGER.debug("nooie-proxy: %s", said)
+    return said
 
 
 async def _close(process: asyncio.subprocess.Process) -> None:
@@ -108,10 +180,10 @@ async def _close(process: asyncio.subprocess.Process) -> None:
 
 
 async def async_devices(
-    hass: HomeAssistant, data: dict[str, Any]
+    hass: HomeAssistant, python: str, data: dict[str, Any]
 ) -> dict[str, dict[str, Any]]:
     """Every camera on the account, keyed by UUID."""
-    process = await _spawn(hass, data, "--list-devices")
+    process = await _spawn(hass, python, data, "--list-devices")
     try:
         async with asyncio.timeout(LIST_TIMEOUT):
             stdout, stderr = await process.communicate()
@@ -139,11 +211,18 @@ class Feed:
     """One camera's call, held open and fanned out to its readers."""
 
     def __init__(
-        self, hass: HomeAssistant, data: dict[str, Any], device_id: str
+        self,
+        hass: HomeAssistant,
+        python: str,
+        data: dict[str, Any],
+        device_id: str,
+        name: str,
     ) -> None:
         self._hass = hass
+        self._python = python
         self._data = data
         self._device_id = device_id
+        self._name = name or device_id
         self._readers: set[asyncio.Queue[bytes]] = set()
         self._task = asyncio.create_task(
             self._call(), name=f"nooie {device_id}"
@@ -170,33 +249,42 @@ class Feed:
         wait = RETRY
         while True:
             started = self._hass.loop.time()
+            carried = False
             try:
-                await self._once()
+                carried = await self._once()
             except asyncio.CancelledError:
                 raise
             except Exception:
                 # One camera's failure must not take the others with it.
-                _LOGGER.exception("Could not run nooie-proxy")
+                _LOGGER.exception("%s: could not run nooie-proxy", self._name)
             # A call that carried a stream is worth placing again at once. A
             # camera that is off is not, and every attempt is a sign-in.
             lived = self._hass.loop.time() - started
-            wait = RETRY if lived > STEADY else min(wait * 2, MAX_RETRY)
+            steady = carried and lived > STEADY
+            wait = RETRY if steady else min(wait * 2, MAX_RETRY)
             await asyncio.sleep(wait)
 
-    async def _once(self) -> None:
-        """One call, from the first packet to the last."""
+    async def _once(self) -> bool:
+        """One call, from the first packet to the last; True if it carried."""
         process = await _spawn(
-            self._hass, self._data, device_id=self._device_id
+            self._hass, self._python, self._data, device_id=self._device_id
         )
         logger = asyncio.create_task(_log(process.stderr))
+        carried = False
         try:
             while True:
                 self._publish(await process.stdout.readexactly(CHUNK))
+                carried = True
         except asyncio.IncompleteReadError:
             pass
         finally:
             await _close(process)
-            await logger
+            said = await logger
+        if not carried:
+            # Without this the camera is simply never there, and the reason
+            # sits in a debug log nobody has turned on.
+            _LOGGER.warning("%s did not stream: %s", self._name, said)
+        return carried
 
     def _publish(self, chunk: bytes) -> None:
         """Hand the chunk to every reader, and never wait for a slow one."""
@@ -207,7 +295,10 @@ class Feed:
 
 
 async def async_serve(
-    hass: HomeAssistant, entry: ConfigEntry, devices: dict[str, Any]
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    python: str,
+    devices: dict[str, Any],
 ) -> int:
     """Hold a call to each camera, serve them all, and return the port."""
     feeds: dict[str, Feed] = {}
@@ -226,8 +317,10 @@ async def async_serve(
     entry.async_on_unload(async_stop)
     feeds.update(
         {
-            device_id: Feed(hass, entry.data, device_id)
-            for device_id in devices
+            device_id: Feed(
+                hass, python, entry.data, device_id, device.get("name", "")
+            )
+            for device_id, device in devices.items()
         }
     )
     return int(runner.addresses[0][1])

@@ -36,11 +36,14 @@ async def async_setup_entry(
     rate of those, so reload the entry to pick up a camera you have added.
     """
     try:
-        devices = await proxy.async_devices(hass, entry.data)
+        # The first time, this builds the proxy's environment, which takes
+        # a minute or two; afterwards it is a version check.
+        python = await proxy.async_prepare(hass)
+        devices = await proxy.async_devices(hass, python, entry.data)
     except proxy.ProxyError as error:
         raise ConfigEntryNotReady(str(error)) from error
     entry.runtime_data = NooieAccount(
-        devices, await proxy.async_serve(hass, entry, devices)
+        devices, await proxy.async_serve(hass, entry, python, devices)
     )
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
