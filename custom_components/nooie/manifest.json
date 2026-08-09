@@ -4,10 +4,11 @@
   "codeowners": ["@ltrgoddard"],
   "config_flow": true,
   "dependencies": [],
-  "documentation": "https://github.com/ltrgoddard/nooie-proxy",
-  "issue_tracker": "https://github.com/ltrgoddard/nooie-proxy/issues",
+  "documentation": "https://github.com/ltrgoddard/hass-nooie",
+  "issue_tracker": "https://github.com/ltrgoddard/hass-nooie/issues",
+  "homeassistant": "2023.8.0",
   "integration_type": "hub",
   "iot_class": "cloud_polling",
   "requirements": [],
-  "version": "0.1.0"
+  "version": "0.2.0"
 }

@@ -57,4 +57,4 @@ class NooieCamera(Camera):
 
     async def stream_source(self) -> str:
         """The RTSP endpoint on the add-on's go2rtc server."""
-        return rtsp_url(self.coordinator.api_url, self._stream_name)
+        return rtsp_url(self.coordinator.base_url, self._stream_name)

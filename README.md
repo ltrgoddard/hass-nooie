@@ -9,13 +9,16 @@ entities.
 
 ## Quick start
 
-1. **Add-on** — add `https://github.com/ltrgoddard/nooie-proxy` as an
-   add-on repository, install the **Nooie** add-on, and enter your Nooie
-   account `username`, `password`, and `country_code`. Every online camera is
-   discovered automatically and streamed as `nooie/<name>`.
-2. **Component** — install the `nooie` integration (HACS or copy
-   `custom_components/nooie` into `config/`), add it, and keep the default
-   URL (`http://nooie:1984`). Camera entities appear automatically.
+1. **Add-on** — in Home Assistant, go to *Settings → Add-ons → Add-on store
+   → ⋯ → Repositories*, add `https://github.com/ltrgoddard/hass-nooie`,
+   install the **Nooie** add-on, and enter your Nooie account `username`,
+   `password`, and `country_code`. Every online camera is discovered
+   automatically and streamed as `nooie/<name>`.
+2. **Component** — install the `nooie` integration (HACS → ⋯ → *Custom
+   repositories* → add `https://github.com/ltrgoddard/hass-nooie` as an
+   *Integration*, or copy `custom_components/nooie` into `config/`), add it,
+   and keep the default URL (`http://nooie:1984`). Camera entities appear
+   automatically.
 
 See [nooie/README.md](nooie/README.md) for the full add-on picture
 (including how to pick a subset of cameras or rename them), and

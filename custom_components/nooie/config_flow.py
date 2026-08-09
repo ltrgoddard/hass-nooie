@@ -2,8 +2,8 @@
 
 from typing import Any
 
+import aiohttp
 import voluptuous as vol
-
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.core import HomeAssistant
 
@@ -21,7 +21,7 @@ async def _check(hass: HomeAssistant, url: str) -> str | None:
             if response.status != 200:
                 return "cannot_connect"
             data = await response.json(content_type=None)
-    except Exception:
+    except (aiohttp.ClientError, TimeoutError, ValueError):
         return "cannot_connect"
     streams = data if isinstance(data, dict) else {}
     if not any(is_nooie_stream(name) for name in streams):

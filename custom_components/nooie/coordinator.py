@@ -24,7 +24,7 @@ class NooieCoordinator(DataUpdateCoordinator[dict[str, dict]]):
         self._session = async_get_clientsession(hass)
 
     @property
-    def api_url(self) -> str:
+    def base_url(self) -> str:
         """The configured go2rtc base URL."""
         return str(self.entry.data[CONF_URL])
 
