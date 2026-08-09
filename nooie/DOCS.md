@@ -5,10 +5,10 @@ RTSP streams that Home Assistant can read.
 
 ## Configuration
 
-Set the Nooie `username` and `password`. If your region is not `44`, set
-`country_code`. The add-on streams every online camera as `nooie/<name>`. To
-select a subset of the cameras, or to rename one, use the optional `devices`
-list. For more information, see [README.md](README.md).
+Set the Nooie `username` and `password`. If your mobile phone's country code
+is not `44`, set `country_code`. The add-on streams every online camera as
+`nooie/<name>`. To select a subset of the cameras, or to rename one, use the
+optional `devices` list. For more information, see [README.md](README.md).
 
 ## Troubleshooting
 

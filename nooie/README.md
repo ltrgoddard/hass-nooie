@@ -11,7 +11,7 @@ every viewer that connects.
 | option | meaning |
 | --- | --- |
 | `username`, `password` | the Nooie account login |
-| `country_code` | the account region, for example `44` |
+| `country_code` | your mobile phone's country code, for example `44` |
 | `devices` | optional `{ id, name }` pairs. Leave this empty to stream every online camera |
 
 The add-on preloads each camera and publishes it as `nooie/<name>` at

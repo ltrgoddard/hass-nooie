@@ -15,9 +15,9 @@ percent of one core.
 
 1. In Home Assistant, go to Settings → Add-ons → Add-on store → ⋯ →
    Repositories. Add `https://github.com/ltrgoddard/hass-nooie`.
-2. Install the Nooie add-on. Enter your Nooie account `username`, `password`,
-   and `country_code`. The add-on finds every online camera and streams it as
-   `nooie/<name>`.
+2. Install the Nooie add-on. Enter your Nooie account `username` and
+   `password`, and your mobile phone's `country_code`. The add-on finds every
+   online camera and streams it as `nooie/<name>`.
 3. Install the `nooie` integration. In HACS, go to ⋯ → Custom repositories.
    Add `https://github.com/ltrgoddard/hass-nooie` as an Integration. You can
    also copy `custom_components/nooie` into `config/`.
