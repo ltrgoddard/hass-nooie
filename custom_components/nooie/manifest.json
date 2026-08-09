@@ -6,9 +6,8 @@
   "dependencies": [],
   "documentation": "https://github.com/ltrgoddard/hass-nooie",
   "issue_tracker": "https://github.com/ltrgoddard/hass-nooie/issues",
-  "homeassistant": "2023.8.0",
   "integration_type": "hub",
-  "iot_class": "cloud_polling",
+  "iot_class": "local_polling",
   "requirements": [],
   "version": "0.1.0"
 }
