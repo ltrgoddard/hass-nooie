@@ -1,43 +1,44 @@
 # Nooie for Home Assistant
 
-Brings your Nooie cameras (WebRTC-only, no official app) into Home Assistant
-as live camera entities, without decoding or re-encoding the stream. An
-add-on runs the [nooie-proxy](https://github.com/ltrgoddard/nooie-proxy)
-engine and [go2rtc](https://github.com/AlexxIT/go2rtc) to turn each camera's
-WebRTC stream into RTSP, WebRTC, and HLS; a custom component turns those into
-camera entities.
+Nooie cameras use WebRTC and have no RTSP output. This repository
+makes them available in Home Assistant as camera entities. An add-on runs the
+[nooie-proxy](https://github.com/ltrgoddard/nooie-proxy) engine and
+[go2rtc](https://github.com/AlexxIT/go2rtc), which convert each WebRTC stream
+into RTSP, WebRTC, and HLS. A custom component turns those streams into
+entities.
+
+The proxy copies the camera's H.264 and AAC into MPEG-TS as the media
+arrives. It does not decode or re-encode the media, so a camera costs a few
+percent of one core.
 
 ## Quick start
 
-1. **Add-on** — in Home Assistant, go to *Settings → Add-ons → Add-on store
-   → ⋯ → Repositories*, add `https://github.com/ltrgoddard/hass-nooie`,
-   install the **Nooie** add-on, and enter your Nooie account `username`,
-   `password`, and `country_code`. Every online camera is discovered
-   automatically and streamed as `nooie/<name>`.
-2. **Component** — install the `nooie` integration (HACS → ⋯ → *Custom
-   repositories* → add `https://github.com/ltrgoddard/hass-nooie` as an
-   *Integration*, or copy `custom_components/nooie` into `config/`), add it,
-   and keep the default URL (`http://nooie:1984`). Camera entities appear
-   automatically.
+1. In Home Assistant, go to Settings → Add-ons → Add-on store → ⋯ →
+   Repositories. Add `https://github.com/ltrgoddard/hass-nooie`.
+2. Install the Nooie add-on. Enter your Nooie account `username`, `password`,
+   and `country_code`. The add-on finds every online camera and streams it as
+   `nooie/<name>`.
+3. Install the `nooie` integration. In HACS, go to ⋯ → Custom repositories.
+   Add `https://github.com/ltrgoddard/hass-nooie` as an Integration. You can
+   also copy `custom_components/nooie` into `config/`.
+4. Add the integration. Keep the default URL, `http://nooie:1984`. The camera
+   entities appear automatically.
 
-See [nooie/README.md](nooie/README.md) for the full add-on picture
-(including how to pick a subset of cameras or rename them), and
-[nooie/DOCS.md](nooie/DOCS.md) for troubleshooting.
+## Contents
 
-## What's in this repository
-
-| path | |
+| path | contents |
 | --- | --- |
-| `nooie/` | the Home Assistant add-on (README, docs, Dockerfile) |
+| `nooie/` | the Home Assistant add-on |
 | `custom_components/nooie/` | the camera integration |
 
-The add-on supervises one nooie-proxy process per camera and preloads every
-stream; go2rtc fans each one out to any number of viewers at
-`rtsp://nooie:8554/nooie/<name>` (the go2rtc web UI is available via
-Ingress). The proxy muxes the camera's own H.264/AAC straight to MPEG-TS —
-nothing is decoded or re-encoded, so it costs a few percent of one core.
+The add-on runs one nooie-proxy process for each camera and preloads every
+stream. go2rtc then serves each stream to every viewer that connects to
+`rtsp://nooie:8554/nooie/<name>`. The go2rtc web interface is available
+through Ingress.
 
-Want the raw CLI without Home Assistant? The engine is its own package and
-repository: [nooie-proxy](https://github.com/ltrgoddard/nooie-proxy)
-(`pip install nooie-proxy`). The add-on installs it from PyPI, pinned in
-[nooie/Dockerfile](nooie/Dockerfile).
+To use the proxy without Home Assistant, see
+[nooie-proxy](https://github.com/ltrgoddard/nooie-proxy). The add-on installs
+it from PyPI at the version pinned in [nooie/Dockerfile](nooie/Dockerfile).
+
+For the add-on options, see [nooie/README.md](nooie/README.md). For
+troubleshooting, see [nooie/DOCS.md](nooie/DOCS.md).

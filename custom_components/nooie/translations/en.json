@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Nooie",
-        "description": "Point at the Nooie add-on's go2rtc server. The default works on Home Assistant OS/Supervised; if the add-on's ports are mapped to the host instead, use http://127.0.0.1:1984.",
+        "description": "The URL of the go2rtc server in the Nooie add-on. The default works on Home Assistant OS and Supervised. If you mapped the add-on ports to the host instead, use http://127.0.0.1:1984.",
         "data": {
           "url": "go2rtc URL"
         }
@@ -17,8 +17,8 @@
       }
     },
     "error": {
-      "cannot_connect": "Could not reach the go2rtc server at that URL.",
-      "no_streams": "Reached the server, but found no Nooie streams. Check that the Nooie add-on is running and at least one camera is online."
+      "cannot_connect": "The go2rtc server at that URL did not respond.",
+      "no_streams": "The server responded, but it has no Nooie streams. Make sure that the Nooie add-on runs and that one camera or more is online."
     }
   }
 }
