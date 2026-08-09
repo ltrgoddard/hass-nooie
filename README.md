@@ -82,6 +82,11 @@ To use the engine on its own, see
   offline camera is the usual one. The call is placed again on a wait that
   doubles up to ten minutes, because every attempt is a sign-in and Nooie
   limits the rate of those.
+- **A camera streams for a few seconds and stops, again and again**: a Nooie
+  camera answers one call at a time. Something else is holding it: the Nooie
+  app, or nooie-proxy run by hand. Close that, and the call holds. This is
+  why the integration places one call for each camera and shares it, rather
+  than placing one for each viewer.
 - **The picture breaks up when it starts**: a reader joins between keyframes
   and synchronizes at the next one, which takes about two seconds.
 - **Something else is wrong**: turn on debug logging for
