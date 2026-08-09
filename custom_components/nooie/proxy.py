@@ -224,13 +224,22 @@ class Feed:
         self._device_id = device_id
         self._name = name or device_id
         self._readers: set[asyncio.Queue[bytes]] = set()
+        self._process: asyncio.subprocess.Process | None = None
         self._task = asyncio.create_task(
             self._call(), name=f"nooie {device_id}"
         )
 
     async def async_close(self) -> None:
-        """Hang up."""
+        """Hang up at once.
+
+        The polite goodbye belongs to a call that ended on its own. This one
+        runs while Home Assistant is stopping, which will not wait: anything
+        left behind here is a proxy that goes on calling a camera forever.
+        """
         self._task.cancel()
+        if self._process is not None:
+            with contextlib.suppress(ProcessLookupError):
+                self._process.kill()
         with contextlib.suppress(asyncio.CancelledError):
             await self._task
 
@@ -269,6 +278,7 @@ class Feed:
         process = await _spawn(
             self._hass, self._python, self._data, device_id=self._device_id
         )
+        self._process = process
         logger = asyncio.create_task(_log(process.stderr))
         carried = False
         try:
@@ -278,6 +288,7 @@ class Feed:
         except asyncio.IncompleteReadError:
             pass
         finally:
+            self._process = None
             await _close(process)
             said = await logger
         if not carried:
