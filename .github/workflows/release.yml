@@ -1,0 +1,19 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # HACS installs the integration from the release tag, so cutting one is
+      # all this repository publishes; the proxy releases itself to PyPI.
+      - uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true

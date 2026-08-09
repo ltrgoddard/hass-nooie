@@ -2,10 +2,10 @@
 
 Brings your Nooie cameras (WebRTC-only, no official app) into Home Assistant
 as live camera entities, without decoding or re-encoding the stream. An
-add-on runs the bundled nooie-proxy engine and
-[go2rtc](https://github.com/AlexxIT/go2rtc) to turn each camera's WebRTC
-stream into RTSP, WebRTC, and HLS; a custom component turns those into camera
-entities.
+add-on runs the [nooie-proxy](https://github.com/ltrgoddard/nooie-proxy)
+engine and [go2rtc](https://github.com/AlexxIT/go2rtc) to turn each camera's
+WebRTC stream into RTSP, WebRTC, and HLS; a custom component turns those into
+camera entities.
 
 ## Quick start
 
@@ -30,7 +30,6 @@ See [nooie/README.md](nooie/README.md) for the full add-on picture
 | --- | --- |
 | `nooie/` | the Home Assistant add-on (README, docs, Dockerfile) |
 | `custom_components/nooie/` | the camera integration |
-| `proxy/` | the bundled nooie-proxy CLI — a standalone package with its own [README](proxy/README.md) |
 
 The add-on supervises one nooie-proxy process per camera and preloads every
 stream; go2rtc fans each one out to any number of viewers at
@@ -38,5 +37,7 @@ stream; go2rtc fans each one out to any number of viewers at
 Ingress). The proxy muxes the camera's own H.264/AAC straight to MPEG-TS —
 nothing is decoded or re-encoded, so it costs a few percent of one core.
 
-Want the raw CLI without Home Assistant? Head to
-[proxy/README.md](proxy/README.md).
+Want the raw CLI without Home Assistant? The engine is its own package and
+repository: [nooie-proxy](https://github.com/ltrgoddard/nooie-proxy)
+(`pip install nooie-proxy`). The add-on installs it from PyPI, pinned in
+[nooie/Dockerfile](nooie/Dockerfile).
