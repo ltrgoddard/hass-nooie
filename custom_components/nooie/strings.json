@@ -3,22 +3,38 @@
     "step": {
       "user": {
         "title": "Nooie",
-        "description": "The URL of the go2rtc server in the Nooie add-on. The default works on Home Assistant OS and Supervised. If you mapped the add-on ports to the host instead, use http://127.0.0.1:1984.",
+        "description": "Sign in with your Nooie account. Every online camera becomes a camera entity.",
         "data": {
-          "url": "go2rtc URL"
+          "username": "Username",
+          "password": "Password",
+          "country_code": "Country code"
+        },
+        "data_description": {
+          "country_code": "Your mobile phone's country code, for example 44."
         }
       },
       "reconfigure": {
         "title": "Nooie",
-        "description": "Update the go2rtc URL.",
+        "description": "Update the Nooie account login.",
         "data": {
-          "url": "go2rtc URL"
+          "username": "Username",
+          "password": "Password",
+          "country_code": "Country code"
+        },
+        "data_description": {
+          "country_code": "Your mobile phone's country code, for example 44."
         }
       }
     },
     "error": {
-      "cannot_connect": "The go2rtc server at that URL did not respond.",
-      "no_streams": "The server responded, but it has no Nooie streams. Make sure that the Nooie add-on runs and that one camera or more is online."
+      "cannot_connect": "Home Assistant could not reach the Nooie cloud. Look in the log for what nooie-proxy said.",
+      "invalid_auth": "Nooie rejected that login. Check the username, the password, and the country code.",
+      "no_devices": "The account has no cameras."
+    },
+    "abort": {
+      "already_configured": "That account is already set up.",
+      "reconfigure_successful": "The login was updated.",
+      "unique_id_mismatch": "That is a different Nooie account. Add it as a new entry."
     }
   }
 }

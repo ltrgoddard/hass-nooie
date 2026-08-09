@@ -6,8 +6,8 @@
   "dependencies": [],
   "documentation": "https://github.com/ltrgoddard/hass-nooie",
   "integration_type": "hub",
-  "iot_class": "local_polling",
+  "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/ltrgoddard/hass-nooie/issues",
-  "requirements": [],
-  "version": "0.1.0"
+  "requirements": ["nooie-proxy==0.1.0"],
+  "version": "0.2.0"
 }

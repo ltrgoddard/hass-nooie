@@ -1,63 +1,51 @@
 """Camera entities for the Nooie integration."""
 
 from homeassistant.components.camera import Camera, CameraEntityFeature
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
+from . import NooieAccount, NooieConfigEntry
 from .const import DOMAIN
-from .coordinator import NooieCoordinator
-from .util import friendly_name, rtsp_url
 
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    entry: ConfigEntry,
+    entry: NooieConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Add a camera entity for each Nooie stream the add-on publishes."""
-    coordinator: NooieCoordinator = hass.data[DOMAIN][entry.entry_id]
-    added: set[str] = set()
-
-    def add_cameras() -> None:
-        new = [name for name in coordinator.data if name not in added]
-        if not new:
-            return
-        added.update(new)
-        async_add_entities(NooieCamera(coordinator, name) for name in new)
-
-    add_cameras()
-    coordinator.async_add_listener(add_cameras)
+    """Add a camera for each camera on the account."""
+    account = entry.runtime_data
+    async_add_entities(
+        NooieCamera(account, device_id) for device_id in account.devices
+    )
 
 
-class NooieCamera(CoordinatorEntity[NooieCoordinator], Camera):
-    """A camera whose stream comes from the Nooie add-on's go2rtc server."""
+class NooieCamera(Camera):
+    """One Nooie camera, streamed by its own nooie-proxy process."""
 
     _attr_has_entity_name = True
+    _attr_name = None
     _attr_supported_features = CameraEntityFeature.STREAM
 
-    def __init__(self, coordinator: NooieCoordinator, stream_name: str) -> None:
-        # CoordinatorEntity subscribes the entity to coordinator updates, so
-        # availability follows the stream list; Camera needs its own __init__.
-        super().__init__(coordinator)
-        Camera.__init__(self)
-        # Not "self.stream": Camera uses that for the stream component's
-        # Stream object, and overwriting it breaks streaming.
-        self._stream_name = stream_name
-        self._attr_unique_id = f"{DOMAIN}-{stream_name}"
-        self._attr_name = friendly_name(stream_name)
+    def __init__(self, account: NooieAccount, device_id: str) -> None:
+        super().__init__()
+        self._account = account
+        self._device_id = device_id
+        self._attr_unique_id = device_id
+        device = account.devices[device_id]
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, device_id)},
+            manufacturer="Nooie",
+            model=device["model"],
+            name=device["name"],
+        )
 
     @property
     def use_stream_for_stills(self) -> bool:
-        """Stills come from the same stream, so nothing else reads it."""
+        """Stills come from the same stream, so nothing else opens a call."""
         return True
 
-    @property
-    def available(self) -> bool:
-        """Only available while the add-on publishes this stream."""
-        return self._stream_name in self.coordinator.data
-
     async def stream_source(self) -> str:
-        """The RTSP endpoint on the add-on's go2rtc server."""
-        return rtsp_url(self.coordinator.base_url, self._stream_name)
+        """The loopback URL that carries this camera's MPEG-TS."""
+        return self._account.stream_url(self._device_id)

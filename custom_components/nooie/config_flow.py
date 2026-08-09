@@ -1,32 +1,35 @@
-"""Config flow for Nooie: point at the add-on's go2rtc server and verify it."""
+"""Config flow for Nooie: take the account login and list its cameras."""
 
+import logging
 from typing import Any
 
-import aiohttp
 import voluptuous as vol
-from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
-from homeassistant.core import HomeAssistant
+from homeassistant.config_entries import (
+    SOURCE_RECONFIGURE,
+    ConfigFlow,
+    ConfigFlowResult,
+)
+from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
+from homeassistant.helpers.selector import (
+    TextSelector,
+    TextSelectorConfig,
+    TextSelectorType,
+)
 
-from .const import CONF_URL, DEFAULT_URL, DOMAIN
-from .util import api_url, is_nooie_stream
+from . import proxy
+from .const import CONF_COUNTRY_CODE, DEFAULT_COUNTRY_CODE, DOMAIN
 
+_LOGGER = logging.getLogger(__name__)
 
-async def _check(hass: HomeAssistant, url: str) -> str | None:
-    """Return an error key, or None when the server has Nooie streams."""
-    from homeassistant.helpers.aiohttp_client import async_get_clientsession
-
-    session = async_get_clientsession(hass)
-    try:
-        async with session.get(api_url(url), timeout=10) as response:
-            if response.status != 200:
-                return "cannot_connect"
-            data = await response.json(content_type=None)
-    except (aiohttp.ClientError, TimeoutError, ValueError):
-        return "cannot_connect"
-    streams = data if isinstance(data, dict) else {}
-    if not any(is_nooie_stream(name) for name in streams):
-        return "no_streams"
-    return None
+SCHEMA = vol.Schema(
+    {
+        vol.Required(CONF_USERNAME): str,
+        vol.Required(CONF_PASSWORD): TextSelector(
+            TextSelectorConfig(type=TextSelectorType.PASSWORD)
+        ),
+        vol.Required(CONF_COUNTRY_CODE, default=DEFAULT_COUNTRY_CODE): str,
+    }
+)
 
 
 class NooieConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -37,44 +40,56 @@ class NooieConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Collect the go2rtc URL."""
-        errors: dict[str, str] = {}
-        if user_input is not None:
-            url = user_input[CONF_URL].strip().rstrip("/")
-            if (error := await _check(self.hass, url)) is not None:
-                errors["base"] = error
-            else:
-                return self.async_create_entry(
-                    title="Nooie", data={CONF_URL: url}
-                )
-        data_schema = vol.Schema(
-            {vol.Required(CONF_URL, default=DEFAULT_URL): str}
-        )
-        return self.async_show_form(
-            step_id="user", data_schema=data_schema, errors=errors
-        )
+        """Collect the Nooie account login."""
+        return await self._async_step_account("user", user_input, {})
 
     async def async_step_reconfigure(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Update the go2rtc URL of an existing entry."""
-        errors: dict[str, str] = {}
-        entry = self._get_reconfigure_entry()
-        if user_input is not None:
-            url = user_input[CONF_URL].strip().rstrip("/")
-            if (error := await _check(self.hass, url)) is not None:
-                errors["base"] = error
-            else:
-                return self.async_update_reload_and_abort(
-                    entry, data={CONF_URL: url}
-                )
-        data_schema = vol.Schema(
-            {
-                vol.Required(
-                    CONF_URL, default=entry.data.get(CONF_URL, DEFAULT_URL)
-                ): str
-            }
+        """Update the login of an existing entry."""
+        return await self._async_step_account(
+            "reconfigure", user_input, dict(self._get_reconfigure_entry().data)
         )
+
+    async def _async_step_account(
+        self,
+        step_id: str,
+        user_input: dict[str, Any] | None,
+        defaults: dict[str, Any],
+    ) -> ConfigFlowResult:
+        """Sign in, and keep the login once it lists at least one camera."""
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            try:
+                devices = await proxy.async_devices(self.hass, user_input)
+            except proxy.ProxyError as error:
+                _LOGGER.debug("Nooie sign-in failed: %s", error)
+                rejected = "login failed" in str(error)
+                errors["base"] = (
+                    "invalid_auth" if rejected else "cannot_connect"
+                )
+            else:
+                if not devices:
+                    errors["base"] = "no_devices"
+                else:
+                    return await self._async_finish(user_input)
         return self.async_show_form(
-            step_id="reconfigure", data_schema=data_schema, errors=errors
+            step_id=step_id,
+            data_schema=self.add_suggested_values_to_schema(
+                SCHEMA, user_input or defaults
+            ),
+            errors=errors,
+        )
+
+    async def _async_finish(self, data: dict[str, Any]) -> ConfigFlowResult:
+        """Create the entry, or write the new login into the old one."""
+        await self.async_set_unique_id(str(data[CONF_USERNAME]).casefold())
+        if self.source == SOURCE_RECONFIGURE:
+            self._abort_if_unique_id_mismatch()
+            return self.async_update_reload_and_abort(
+                self._get_reconfigure_entry(), data=data
+            )
+        self._abort_if_unique_id_configured()
+        return self.async_create_entry(
+            title=str(data[CONF_USERNAME]), data=data
         )
