@@ -5,7 +5,7 @@ ARG BUILD_ARCH=amd64
 # How nooie-proxy is installed. The default points at the GitHub repo at a
 # pinned commit; once the package is published to PyPI, prefer
 #   --build-arg NOOIE_PKG="nooie-proxy==0.3.0"
-ARG NOOIE_PKG="nooie-proxy @ git+https://github.com/ltrgoddard/nooie-proxy.git@8839c2b7cd2317e1751fbf022dd6f44d9a214080"
+ARG NOOIE_PKG="nooie-proxy @ git+https://github.com/ltrgoddard/nooie-proxy.git@51f2554409f08522dfacd01e93e456c236ced1ce"
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates curl git \
