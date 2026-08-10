@@ -63,4 +63,27 @@ curl -s -H "Authorization: Bearer $(cat /tmp/ha-nooie/token)" \
 
 home assistant manages go2rtc only under docker. a still image that fails
 there and works here is the difference between a managed go2rtc and this
-one, and only a container can tell them apart.
+one, and only a container can tell them apart. for that, see below.
+
+## a container home assistant
+
+apple's `container` runs the official image natively; docker desktop here
+was years stale and choked on zstd layers. the official image satisfies
+`is_docker_env()` on any runtime, so home assistant starts its own go2rtc:
+no binary to fetch, no `go2rtc: url:` in the config.
+
+```sh
+container system start
+container run -d --name ha -m 2g --dns 1.1.1.1 \
+  --mount source=/tmp/ha-docker/config,target=/config \
+  --mount source=<repo>/custom_components/nooie,target=/config/custom_components/nooie,readonly \
+  -e TZ=Europe/London ghcr.io/home-assistant/home-assistant:stable
+```
+
+- `--dns 1.1.1.1`, because the gateway's own forwarder does not resolve.
+- the container's ip changes at each start; `container list` shows it, and
+  `HA_BASE=http://<ip>:8123 onboard.py` onboards it.
+- the log is `/tmp/ha-docker/config/home-assistant.log`.
+- `/tmp/ha-docker` holds copies of the rig's installs, seeded while fresh
+  logins were refused (see PLAN.md). one websocket for each install: run
+  the container and the rig one at a time.

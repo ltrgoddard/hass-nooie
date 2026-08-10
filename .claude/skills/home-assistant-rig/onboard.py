@@ -14,7 +14,7 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-BASE = "http://127.0.0.1:8123"
+BASE = os.environ.get("HA_BASE", "http://127.0.0.1:8123")
 CLIENT = f"{BASE}/"
 RIG = Path(os.environ.get("RIG", "/tmp/ha-nooie"))
 REPO = Path(__file__).resolve().parents[3]
