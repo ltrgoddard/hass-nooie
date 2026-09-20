@@ -55,9 +55,12 @@ EU hosts, and `app.us`, `wss.us` and `policy-us` all resolve, so the account
 is almost certainly held in the other region. nooie-proxy 0.2.1 (committed,
 not tagged) asks `global.nooie.com/v2/account/country`, as the app does, and
 uses the hosts it names: `us`, `eu` or `cn`. Anything it does not know,
-`001` and `US` included, gets `us`. The answer carries an `exist` flag, so
-it may follow the account and not only the country; that is untested. No US
-account is to hand, so only the reporter can confirm the login.
+`001` and `US` included, gets `us`. The lookup follows the account, not the
+country: this EU account comes back `eu`, `exist` 1, at country 1, 44 and
+86 alike, so the country code stops mattering for an account that exists.
+On 2026-09-20 the new path did one fresh sign-in (lookup, login, device
+list), reused a session stored before it, and streamed 30 s, all on `eu`.
+No US account is to hand, so only the reporter can confirm `us`.
 
 ## next
 
