@@ -51,7 +51,7 @@ MAX_RETRY = 600
 # them, and the proxy needs a newer one than the pin. Giving it an environment
 # of its own settles that at this release and at every later one, and costs
 # far less disk than the container this integration replaced.
-VERSION = "0.2.0"
+VERSION = "0.2.1"
 PACKAGE = f"nooie-proxy=={VERSION}"
 BUILD_TIMEOUT = 900
 # aiortc reads crc32c only for SCTP, which a receive-only call never opens.

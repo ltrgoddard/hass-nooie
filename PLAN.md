@@ -52,8 +52,7 @@ there is nothing to cache.
 U4 comes from the forum (thread 189977, post 21): a US user with a good
 login was rejected at every country code. nooie-proxy 0.2.0 hard-codes the
 EU hosts, and `app.us`, `wss.us` and `policy-us` all resolve, so the account
-is almost certainly held in the other region. nooie-proxy 0.2.1 (committed,
-not tagged) asks `global.nooie.com/v2/account/country`, as the app does, and
+is almost certainly held in the other region. nooie-proxy 0.2.1 asks `global.nooie.com/v2/account/country`, as the app does, and
 uses the hosts it names: `us`, `eu` or `cn`. Anything it does not know,
 `001` and `US` included, gets `us`. The lookup follows the account, not the
 country: this EU account comes back `eu`, `exist` 1, at country 1, 44 and
@@ -64,9 +63,9 @@ No US account is to hand, so only the reporter can confirm `us`.
 
 ## next
 
-0. **Tag nooie-proxy v0.2.1, then set `VERSION = "0.2.1"` in `proxy.py`**,
-   in that order: the integration installs the pin from PyPI. Then ask the
-   reporter to retry with country code 1.
+0. **Ask the forum reporter to update to 0.2.1 and sign in again.** Both
+   releases are out; any country code will do, since the lookup follows
+   the account.
 
 1. **Answer U3 with one fresh `--list-devices` from the host**, no earlier
    than tomorrow. Do not attempt any other login until then.
