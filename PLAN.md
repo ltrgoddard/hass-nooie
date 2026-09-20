@@ -53,8 +53,11 @@ U4 comes from the forum (thread 189977, post 21): a US user with a good
 login was rejected at every country code. nooie-proxy 0.2.0 hard-codes the
 EU hosts, and `app.us`, `wss.us` and `policy-us` all resolve, so the account
 is almost certainly held in the other region. nooie-proxy 0.2.1 (committed,
-not tagged) picks `us` for country code 1 and takes `NOOIE_REGION`. No US
-account is to hand, so only the reporter can confirm it.
+not tagged) asks `global.nooie.com/v2/account/country`, as the app does, and
+uses the hosts it names: `us`, `eu` or `cn`. Anything it does not know,
+`001` and `US` included, gets `us`. The answer carries an `exist` flag, so
+it may follow the account and not only the country; that is untested. No US
+account is to hand, so only the reporter can confirm the login.
 
 ## next
 
