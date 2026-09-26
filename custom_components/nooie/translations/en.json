@@ -36,5 +36,15 @@
       "reconfigure_successful": "The login was updated.",
       "unique_id_mismatch": "That is a different Nooie account. Add it as a new entry."
     }
+  },
+  "entity": {
+    "binary_sensor": {
+      "motion": {
+        "name": "Motion"
+      },
+      "cry": {
+        "name": "Crying"
+      }
+    }
   }
 }

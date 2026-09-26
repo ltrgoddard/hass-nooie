@@ -24,6 +24,7 @@ from aiohttp import web
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.dispatcher import async_dispatcher_send
 
 from .const import CONF_COUNTRY_CODE, DOMAIN
 
@@ -51,7 +52,7 @@ MAX_RETRY = 600
 # them, and the proxy needs a newer one than the pin. Giving it an environment
 # of its own settles that at this release and at every later one, and costs
 # far less disk than the container this integration replaced.
-VERSION = "0.2.2"
+VERSION = "0.3.0"
 PACKAGE = f"nooie-proxy=={VERSION}"
 BUILD_TIMEOUT = 900
 # aiortc reads crc32c only for SCTP, which a receive-only call never opens.
@@ -315,6 +316,39 @@ class Feed:
             queue.put_nowait(chunk)
 
 
+def signal(device_id: str) -> str:
+    """The dispatcher signal that carries one camera's alerts."""
+    return f"{DOMAIN}_{device_id}"
+
+
+async def _watch(hass: HomeAssistant, python: str, data: dict[str, Any]):
+    """Pass each alert the engine prints to the sensors of its camera.
+
+    The engine reads the alert list; it places no call, so it needs no
+    install of its own and shares the account's.
+    """
+    wait = RETRY
+    while True:
+        started = hass.loop.time()
+        process = await _spawn(hass, python, data, "--events")
+        logger = asyncio.create_task(_log(process.stderr))
+        try:
+            async for line in process.stdout:
+                fields = line.decode(errors="replace").rstrip("\n").split("\t")
+                if len(fields) == 3:
+                    async_dispatcher_send(hass, signal(fields[0]), fields[1])
+        finally:
+            # it holds nothing that needs a goodbye, so do not wait for one.
+            with contextlib.suppress(ProcessLookupError):
+                process.kill()
+            await process.wait()
+            said = await logger
+        _LOGGER.warning("Nooie alerts stopped: %s", said)
+        lived = hass.loop.time() - started
+        wait = RETRY if lived > STEADY else min(wait * 2, MAX_RETRY)
+        await asyncio.sleep(wait)
+
+
 async def async_serve(
     hass: HomeAssistant,
     entry: ConfigEntry,
@@ -329,7 +363,12 @@ async def async_serve(
     await runner.setup()
     await web.TCPSite(runner, "127.0.0.1", 0).start()
 
+    watcher = entry.async_create_background_task(
+        hass, _watch(hass, python, dict(entry.data)), "nooie alerts"
+    )
+
     async def async_stop() -> None:
+        watcher.cancel()
         await runner.cleanup()
         await asyncio.gather(*(feed.async_close() for feed in feeds.values()))
 

@@ -28,11 +28,14 @@ the account's session, and the drops stopped when the layer did. Their two
 installs cannot have closed each other's websockets, because a second install
 does not do that.
 
+| the app's inbox is the alert source | the Android app's `MessageModule` names `msg/device-list` (uuid, time, rows). It returns the camera's alerts newest first: type 8 motion, type 13 crying, `time` in unix seconds, and a signed snapshot URL. Alerts kept arriving while the launchd agent held a call, so an open call does not silence them. A fake alert through the rig turned the motion sensor on, and off 30 s later |
+
 ## what is not known
 
 | # | question |
 | --- | --- |
 | U1 | can two cameras stream at once? |
+| U6 | how long after the event does an alert reach `msg/device-list`? no alert came during the evening's test |
 | U4 | does a US account sign in on `app.us.nooie.com`? |
 
 U1 is expected to work, because installs do not disturb each other, but it

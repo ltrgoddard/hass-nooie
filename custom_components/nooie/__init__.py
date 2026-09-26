@@ -10,7 +10,7 @@ from homeassistant.exceptions import ConfigEntryNotReady
 
 from . import proxy
 
-PLATFORMS = [Platform.CAMERA]
+PLATFORMS = [Platform.BINARY_SENSOR, Platform.CAMERA]
 
 type NooieConfigEntry = ConfigEntry[NooieAccount]
 
