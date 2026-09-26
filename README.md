@@ -47,8 +47,10 @@ Four things fix that shape:
   call for each process. The integration hands the result to as many readers
   as ask for it.
 - Nooie's signalling holds one websocket for each install, and a second
-  connection closes the first. Each camera therefore signs in as an install
-  of its own, and keeps its session between calls. A camera that was offline
+  connection closes the first. Each camera is therefore an install of its
+  own. A sign-in ends every other session on the account, so all the
+  installs share one session, and the integration signs in only when Nooie
+  refuses it. A camera that was offline
   when the account was read is not called at all, because it cannot answer.
 
 ## What it writes
@@ -58,8 +60,9 @@ Everything lives under `config/nooie/`.
 | path | contents |
 | --- | --- |
 | `venv/` | the engine and its dependencies |
-| `account/` | the install that reads the camera list, and its session |
-| `<uuid>/` | one camera's install, and its session |
+| `sessions.json` | the one Nooie session that every install shares |
+| `account/` | the install that reads the camera list |
+| `<uuid>/` | one camera's install |
 
 The engine is not a Home Assistant requirement, because it is a program
 rather than a library. Home Assistant pins the versions that an integration's
@@ -90,12 +93,13 @@ To use the engine on its own, see
   signalling websocket and ends its call. nooie-proxy run by hand out of the
   same directory does it. So does a second copy of this integration on the
   same `config/nooie/`. Stop that, and the call holds.
-- **The Nooie app says that another app is using the camera, or that your
-  login has expired**: Nooie appears to keep one session for each account,
-  so a sign-in by the integration ends the app's session, and the next
-  sign-in by the app ends the integration's. Neither side then streams for
-  long. Make a second Nooie account, share the camera to it from the app, and
-  give that account to the integration.
+- **The Nooie app says that your login has expired**: Nooie keeps one
+  session for each account, and a sign-in ends all the others. The
+  integration signs in only when its stored session is refused, but the app
+  and the integration still sign each other out. Give the integration a
+  second Nooie account, and share the camera to it from the app.
+- **The call ends when you watch in the app**: the camera takes the newer
+  call. The integration calls again within a minute.
 - **The picture breaks up when it starts**: a reader joins between keyframes
   and synchronizes at the next one, which takes about two seconds.
 - **Something else is wrong**: turn on debug logging for

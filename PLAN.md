@@ -10,6 +10,8 @@
 | a camera that has been idle overnight answers without the Tuya presence | the first call of 2026-08-10, placed with nothing else on the account after 10.6 hours idle, answered in 9 seconds and streamed steadily until it was stopped by hand at 135 seconds |
 | the still image works on a container Home Assistant with a managed go2rtc | an official-image Home Assistant under Apple's `container` runtime started its own go2rtc 1.9.14 (the official image alone satisfies `is_docker_env()`), the engine's venv built from musllinux wheels in 8 seconds, and `camera_proxy` returned a live frame |
 | code 1053 is a wrong password, not a block | a wrong password on the real account returns 1053 with `residue_degree` 4, the attempts left before a lockout; an unknown account returns 1055. On 2026-09-26 the refusals came from sourcing `.env` in the shell, which expands the quoted password's special characters. The proxy's literal parse signed in at once |
+| a session works from any install, and sharing one ends the evictions | on 2026-09-26 a new identity listed devices with the rig camera's session while that camera streamed on. With `NOOIE_SESSIONS` (0.2.2) the rig signed in once, and a reload signed in zero times and streamed again |
+| the camera serves one call, and the newer caller wins | on 2026-09-26 a call ended after 9 s the moment the camera answered another caller's offer: the launchd `eco.datadesk.nooie-proxy` agent on this Mac, which also signed in again whenever it was refused. With it stopped, the rig's call held |
 | a fresh sign-in ends every other session on the account | on 2026-09-26 install A signed in, install B signed in, and A's stored session was then refused. The phone app is one more session, which fits the US report of post 24 |
 | the Tuya account layer was the whole of the session shortage | every `USER_SESSION_LIMIT` and `USER_SESSION_INVALID` came from `smartlife.m.user.uid.password.login` or `m.life.home.space.list`. Nooie's own API answered throughout, and a refused Tuya session does not clear for at least half an hour |
 | `add_mux_stream` is PyAV 17.0.0 | the changelog says so, and `OutputContainer` has no such attribute in 16.1.0. Home Assistant pins 16 |
@@ -54,19 +56,11 @@ On 2026-09-20 the new path did one fresh sign-in (lookup, login, device
 list), reused a session stored before it, and streamed 30 s, all on `eu`.
 No US account is to hand, so only the reporter can confirm `us`.
 
-The integration signs in twice per load (`account/` and `<uuid>/`), so it
-evicts itself as well as the phone app. The fix is one session shared by
-every install. A copy of A's session streamed from a new identity without
-signing in, but A's session was refused afterwards, and that call and a
-control call from A alone both ended after 9 s and 36 s with "the camera
-stopped sending audio". Whether a session survives use under a second
-identity is not settled.
-
 ## next
 
-0. **Ask the forum reporter to try a second Nooie account** with the camera
-   shared to it, and for the debug log of `custom_components.nooie`. A
-   stream that holds on the shared account confirms the eviction for them.
+0. **Ask the forum reporter to update to 0.2.2 and use a second Nooie
+   account** with the camera shared to it. The phone app and the
+   integration on one account still sign each other out.
 
 1. **Never source `.env` in the shell.** Run the proxy from the checkout,
    or let `onboard.py` read it: both take the value literally. A wrong
@@ -78,3 +72,7 @@ identity is not settled.
 The container Home Assistant at `/tmp/ha-docker` holds copies of the rig's
 installs, account and camera alike. One websocket for each install: run the
 container and the rig one at a time.
+
+The launchd agent `eco.datadesk.nooie-proxy` was stopped on 2026-09-26
+(`launchctl bootout`). It calls the same camera as the rig and signs in
+whenever it is refused, so run it or the rig, not both.

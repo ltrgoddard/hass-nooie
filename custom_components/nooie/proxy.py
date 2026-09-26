@@ -51,7 +51,7 @@ MAX_RETRY = 600
 # them, and the proxy needs a newer one than the pin. Giving it an environment
 # of its own settles that at this release and at every later one, and costs
 # far less disk than the container this integration replaced.
-VERSION = "0.2.1"
+VERSION = "0.2.2"
 PACKAGE = f"nooie-proxy=={VERSION}"
 BUILD_TIMEOUT = 900
 # aiortc reads crc32c only for SCTP, which a receive-only call never opens.
@@ -147,6 +147,10 @@ async def _spawn(
             # XDG_CONFIG_HOME, because macOS reads only the first.
             "HOME": home,
             "XDG_CONFIG_HOME": home,
+            # One session for every install: a sign-in ends every other
+            # session on the account, so installs that each signed in would
+            # evict one another, and the phone app with them.
+            "NOOIE_SESSIONS": hass.config.path(DOMAIN, "sessions.json"),
             "PYTHONWARNINGS": QUIET,
             "NOOIE_USERNAME": str(data[CONF_USERNAME]),
             "NOOIE_PASSWORD": str(data[CONF_PASSWORD]),
