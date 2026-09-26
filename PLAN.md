@@ -66,7 +66,7 @@ identity is not settled.
 
 0. **Ask the forum reporter to try a second Nooie account** with the camera
    shared to it, and for the debug log of `custom_components.nooie`. A
-   stream that holds on the shared account settles U5.
+   stream that holds on the shared account confirms the eviction for them.
 
 1. **Never source `.env` in the shell.** Run the proxy from the checkout,
    or let `onboard.py` read it: both take the value literally. A wrong
