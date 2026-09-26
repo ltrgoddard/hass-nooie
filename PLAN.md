@@ -31,6 +31,7 @@ does not do that.
 | --- | --- |
 | U1 | can two cameras stream at once? |
 | U4 | does a US account sign in on `app.us.nooie.com`? |
+| U5 | does a fresh sign-in end the account's other sessions, the phone app's included? |
 | U3 | does the login refusal (code 1053) clear, and on what timescale? |
 
 U1 is expected to work, because installs do not disturb each other, but it
@@ -61,11 +62,27 @@ On 2026-09-20 the new path did one fresh sign-in (lookup, login, device
 list), reused a session stored before it, and streamed 30 s, all on `eu`.
 No US account is to hand, so only the reporter can confirm `us`.
 
+U5 comes from the forum (post 24, 2026-09-23). On 0.2.1 the US account
+signed in and listed its camera, so U4 is settled: the region lookup works
+for `us`. But the camera entity went between unavailable and idle, with no
+stream, and the phone app said that another app was using the camera and
+that its login had expired. That fits one session for each account: the
+integration's sign-in expires the app's token, the app signs in again and
+expires the integration's, and each side signs in again when it is refused.
+The integration itself signs in twice per load (`account/` and `<uuid>/`),
+so it can evict itself too. It may also explain the two-camera drops of
+8 to 18 s that were put down to Tuya. The test is three `--list-devices`
+runs: install A, install B, then A again. On 2026-09-26 all three got 1053,
+six days after the last fresh sign-in worked, so U3 still blocks it. If U5
+holds, the answer for users is a second account with the camera shared to
+it, and the answer for the integration is one session shared by every
+install, seeded from `account/` rather than signed in again.
+
 ## next
 
-0. **Ask the forum reporter to update to 0.2.1 and sign in again.** Both
-   releases are out; any country code will do, since the lookup follows
-   the account.
+0. **Ask the forum reporter to try a second Nooie account** with the camera
+   shared to it, and for the debug log of `custom_components.nooie`. A
+   stream that holds on the shared account settles U5.
 
 1. **Answer U3 with one fresh `--list-devices` from the host**, no earlier
    than tomorrow. Do not attempt any other login until then.

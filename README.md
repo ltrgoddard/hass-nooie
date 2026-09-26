@@ -90,6 +90,12 @@ To use the engine on its own, see
   signalling websocket and ends its call. nooie-proxy run by hand out of the
   same directory does it. So does a second copy of this integration on the
   same `config/nooie/`. Stop that, and the call holds.
+- **The Nooie app says that another app is using the camera, or that your
+  login has expired**: Nooie appears to keep one session for each account,
+  so a sign-in by the integration ends the app's session, and the next
+  sign-in by the app ends the integration's. Neither side then streams for
+  long. Make a second Nooie account, share the camera to it from the app, and
+  give that account to the integration.
 - **The picture breaks up when it starts**: a reader joins between keyframes
   and synchronizes at the next one, which takes about two seconds.
 - **Something else is wrong**: turn on debug logging for
