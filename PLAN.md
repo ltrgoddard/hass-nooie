@@ -9,7 +9,8 @@
 | the camera answers a call with no Tuya presence at all | the proxy placed and held calls with `thing.presence` skipped, one of them for 593 seconds, ended by its own timeout rather than by the camera |
 | a camera that has been idle overnight answers without the Tuya presence | the first call of 2026-08-10, placed with nothing else on the account after 10.6 hours idle, answered in 9 seconds and streamed steadily until it was stopped by hand at 135 seconds |
 | the still image works on a container Home Assistant with a managed go2rtc | an official-image Home Assistant under Apple's `container` runtime started its own go2rtc 1.9.14 (the official image alone satisfies `is_docker_env()`), the engine's venv built from musllinux wheels in 8 seconds, and `camera_proxy` returned a live frame |
-| a fresh Nooie login is refused with code 1053, while stored sessions keep working | on 2026-08-10 the same fresh login failed identically from the host and the container, minutes after a cached session had streamed for 135 seconds; a transplanted session then called and streamed again |
+| code 1053 is a wrong password, not a block | a wrong password on the real account returns 1053 with `residue_degree` 4, the attempts left before a lockout; an unknown account returns 1055. On 2026-09-26 the refusals came from sourcing `.env` in the shell, which expands the quoted password's special characters. The proxy's literal parse signed in at once |
+| a fresh sign-in ends every other session on the account | on 2026-09-26 install A signed in, install B signed in, and A's stored session was then refused. The phone app is one more session, which fits the US report of post 24 |
 | the Tuya account layer was the whole of the session shortage | every `USER_SESSION_LIMIT` and `USER_SESSION_INVALID` came from `smartlife.m.user.uid.password.login` or `m.life.home.space.list`. Nooie's own API answered throughout, and a refused Tuya session does not clear for at least half an hour |
 | `add_mux_stream` is PyAV 17.0.0 | the changelog says so, and `OutputContainer` has no such attribute in 16.1.0. Home Assistant pins 16 |
 | a reader that joins a call in progress synchronizes in seconds | ffmpeg attached two minutes into a call and read 13 fps for the rest of it |
@@ -31,19 +32,10 @@ does not do that.
 | --- | --- |
 | U1 | can two cameras stream at once? |
 | U4 | does a US account sign in on `app.us.nooie.com`? |
-| U5 | does a fresh sign-in end the account's other sessions, the phone app's included? |
-| U3 | does the login refusal (code 1053) clear, and on what timescale? |
 
 U1 is expected to work, because installs do not disturb each other, but it
 has not been seen: the second camera has been offline, so every result here
 is one camera. Bring it up and watch both hold.
-
-U3 appeared on 2026-08-10 and fits the 0.1.0 era, when every call attempt
-was a fresh login: the account has likely tripped a rate or device control.
-The engine caches its session since 0.2.0, so a working install never logs
-in again, but a new install cannot be created until 1053 clears. If it
-never clears, the fix is to stop registering fresh installs: seed new
-installs from a stored session, as the container was seeded.
 
 U2, whether a camera idle overnight answers without the Tuya presence, was
 the one that could have undone the deletion. It is now a finding: the first
@@ -62,21 +54,13 @@ On 2026-09-20 the new path did one fresh sign-in (lookup, login, device
 list), reused a session stored before it, and streamed 30 s, all on `eu`.
 No US account is to hand, so only the reporter can confirm `us`.
 
-U5 comes from the forum (post 24, 2026-09-23). On 0.2.1 the US account
-signed in and listed its camera, so U4 is settled: the region lookup works
-for `us`. But the camera entity went between unavailable and idle, with no
-stream, and the phone app said that another app was using the camera and
-that its login had expired. That fits one session for each account: the
-integration's sign-in expires the app's token, the app signs in again and
-expires the integration's, and each side signs in again when it is refused.
-The integration itself signs in twice per load (`account/` and `<uuid>/`),
-so it can evict itself too. It may also explain the two-camera drops of
-8 to 18 s that were put down to Tuya. The test is three `--list-devices`
-runs: install A, install B, then A again. On 2026-09-26 all three got 1053,
-six days after the last fresh sign-in worked, so U3 still blocks it. If U5
-holds, the answer for users is a second account with the camera shared to
-it, and the answer for the integration is one session shared by every
-install, seeded from `account/` rather than signed in again.
+The integration signs in twice per load (`account/` and `<uuid>/`), so it
+evicts itself as well as the phone app. The fix is one session shared by
+every install. A copy of A's session streamed from a new identity without
+signing in, but A's session was refused afterwards, and that call and a
+control call from A alone both ended after 9 s and 36 s with "the camera
+stopped sending audio". Whether a session survives use under a second
+identity is not settled.
 
 ## next
 
@@ -84,8 +68,9 @@ install, seeded from `account/` rather than signed in again.
    shared to it, and for the debug log of `custom_components.nooie`. A
    stream that holds on the shared account settles U5.
 
-1. **Answer U3 with one fresh `--list-devices` from the host**, no earlier
-   than tomorrow. Do not attempt any other login until then.
+1. **Never source `.env` in the shell.** Run the proxy from the checkout,
+   or let `onboard.py` read it: both take the value literally. A wrong
+   password costs one of the few attempts before a lockout.
 2. **Bring the second camera online and answer U1.** The container Home
    Assistant reads the account with its cached session, so a reload costs
    no login.

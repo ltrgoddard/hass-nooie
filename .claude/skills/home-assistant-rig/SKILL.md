@@ -18,6 +18,10 @@ pkill -f 'ha-nooie/venv/bin'                      # stop both
 the rig is disposable. `rm -rf /tmp/ha-nooie` and run `rig.sh` again to start
 from nothing. it costs a sign-in, and the account has few to spare.
 
+do not `. .env` in a shell: it expands the password's special characters,
+and nooie answers a wrong password with code 1053 and counts it towards a
+lockout (`residue_degree` is the attempts left).
+
 ## what the rig needs, and why
 
 - **a venv with `homeassistant` in it.** the integration is loaded from a
