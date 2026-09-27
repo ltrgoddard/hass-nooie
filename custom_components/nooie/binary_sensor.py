@@ -1,4 +1,4 @@
-"""Motion and crying sensors, from the alerts the Nooie app shows."""
+"""Motion, sound and crying sensors, from the alerts the Nooie app shows."""
 
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
@@ -18,6 +18,7 @@ from .proxy import signal
 HOLD = 30
 KINDS = {
     "motion": BinarySensorDeviceClass.MOTION,
+    "sound": BinarySensorDeviceClass.SOUND,
     "cry": BinarySensorDeviceClass.SOUND,
 }
 
@@ -27,7 +28,7 @@ async def async_setup_entry(
     entry: NooieConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Add a motion and a crying sensor for each camera on the account."""
+    """Add a motion, a sound and a crying sensor for each camera on the account."""
     async_add_entities(
         NooieAlert(device_id, kind)
         for device_id in entry.runtime_data.devices

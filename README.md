@@ -20,7 +20,7 @@ appear.
 2. Restart Home Assistant, then add the Nooie integration.
 3. Enter your Nooie account username and password, and your mobile phone's
    country code. Every camera on the account becomes a camera entity, with
-   a motion sensor and a crying sensor beside it.
+   a motion sensor, a sound sensor and a crying sensor beside it.
 
 The first sign-in takes a minute or two, while the integration builds the
 engine's environment. Later ones are immediate.
@@ -54,15 +54,16 @@ Four things fix that shape:
   refuses it. A camera that was offline
   when the account was read is not called at all, because it cannot answer.
 
-## Motion and crying
+## Motion, sound and crying
 
 The sensors come from the alerts that the Nooie app lists in its inbox. One
 engine process reads that list every five seconds for the whole account. It
 does not call the cameras, so it does not use their calls. A sensor turns on
 when an alert arrives and turns off 30 seconds later. The camera decides
-what counts as motion or crying, and the app sets its sensitivity and
-schedule. An alert appears in the list only after the camera uploads its
-snapshot, so a sensor turns on some seconds after the event.
+what counts as motion, an unusual sound or crying, and the app turns each
+one on and sets its sensitivity. A sensor stays off for a kind of alert
+that is turned off in the app. An alert reaches the list within about 25
+seconds of the event, so a sensor turns on up to half a minute after it.
 
 ## What it writes
 

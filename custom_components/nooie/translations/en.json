@@ -42,6 +42,9 @@
       "motion": {
         "name": "Motion"
       },
+      "sound": {
+        "name": "Sound"
+      },
       "cry": {
         "name": "Crying"
       }
